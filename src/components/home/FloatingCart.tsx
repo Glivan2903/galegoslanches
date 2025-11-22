@@ -1214,13 +1214,7 @@ export function FloatingCart({
                 <p className="text-muted-foreground text-sm max-w-xs">
                   Adicione alguns produtos do menu para começar seu pedido
                 </p>
-                <Button
-                  variant="outline"
-                  className="mt-4"
-                  onClick={() => setIsOpen(false)}
-                >
-                  Voltar para o menu
-                </Button>
+                
               </div>
             ) : (
               <>
