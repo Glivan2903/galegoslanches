@@ -311,7 +311,7 @@ export function FloatingCart({
     cartStep === "cart"
       ? totalPrice
       : totalPrice +
-        (totalItems > 0 && orderType === "delivery" ? deliveryFee : 0);
+      (totalItems > 0 && orderType === "delivery" ? deliveryFee : 0);
 
   // Inicializar o formulário
   const form = useForm<FormValues>({
@@ -381,7 +381,7 @@ export function FloatingCart({
           .from("restaurants")
           .select("*")
           .limit(1)
-          .single();
+          .maybeSingle();
 
         if (error) {
           throw error;
@@ -600,7 +600,7 @@ export function FloatingCart({
       // Generate order number from created order
       setOrderNumber(
         createdOrder[0].number ||
-          String(Math.floor(10000 + Math.random() * 90000))
+        String(Math.floor(10000 + Math.random() * 90000))
       );
 
       // Define estimated delivery/pickup time
@@ -696,8 +696,8 @@ export function FloatingCart({
       const fieldErrors = errors[firstError as keyof typeof errors];
       const errorMessage =
         fieldErrors &&
-        typeof fieldErrors === "object" &&
-        "_errors" in fieldErrors
+          typeof fieldErrors === "object" &&
+          "_errors" in fieldErrors
           ? fieldErrors._errors[0]
           : "Erro de validação";
       toast.error(`Erro no campo: ${errorMessage}`);
@@ -777,9 +777,8 @@ export function FloatingCart({
         phone: formData.phone || "Não informado",
         address:
           formData.orderType === "delivery"
-            ? `${formData.streetName || ""}, ${formData.number || ""}, ${
-                formData.complement || ""
-              }, ${formData.neighborhood || ""}, ${formData.zipCode || ""}`
+            ? `${formData.streetName || ""}, ${formData.number || ""}, ${formData.complement || ""
+            }, ${formData.neighborhood || ""}, ${formData.zipCode || ""}`
             : "N/A",
         paymentMethod: paymentMethodName,
         deliveryFee: formData.orderType === "delivery" ? deliveryFee : 0,
@@ -802,13 +801,12 @@ export function FloatingCart({
           const addonsText =
             (item.selectedAddons || []).length > 0
               ? `\n    - Adicionais: ${item.selectedAddons
-                  ?.map(
-                    (addon) =>
-                      `${addon.name} ${
-                        addon.quantity > 1 ? `(${addon.quantity}x)` : ""
-                      } ${formatCurrency(addon.price * (addon.quantity || 1))}`
-                  )
-                  .join(", ")}`
+                ?.map(
+                  (addon) =>
+                    `${addon.name} ${addon.quantity > 1 ? `(${addon.quantity}x)` : ""
+                    } ${formatCurrency(addon.price * (addon.quantity || 1))}`
+                )
+                .join(", ")}`
               : "";
 
           // Formatar observações do item, se houver
@@ -826,13 +824,12 @@ export function FloatingCart({
       // Construir mensagem
       let message = `*Pedido #${orderInfo.orderNumber}*\n\n`;
       message += `*Restaurante:* ${orderInfo.restaurantName}\n`;
-      message += `*Tipo de pedido:* ${
-        orderInfo.orderType === "delivery"
+      message += `*Tipo de pedido:* ${orderInfo.orderType === "delivery"
           ? "Entrega"
           : orderInfo.orderType === "takeaway"
-          ? "Retirada"
-          : "No local"
-      }\n`;
+            ? "Retirada"
+            : "No local"
+        }\n`;
 
       if (orderInfo.orderType === "instore") {
         message += `*Mesa:* ${orderInfo.tableNumber}\n`;
@@ -1214,7 +1211,7 @@ export function FloatingCart({
                 <p className="text-muted-foreground text-sm max-w-xs">
                   Adicione alguns produtos do menu para começar seu pedido
                 </p>
-                
+
               </div>
             ) : (
               <>

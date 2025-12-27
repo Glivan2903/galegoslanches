@@ -160,7 +160,7 @@ export default function Home() {
           .from("restaurants")
           .select("*")
           .limit(1)
-          .single();
+          .maybeSingle();
 
         if (error) throw error;
         setRestaurant(data);
@@ -379,9 +379,8 @@ export default function Home() {
 
   return (
     <div
-      className={`flex flex-col min-h-screen bg-gray-50 ${
-        cartOpen ? "overflow-hidden h-screen" : ""
-      }`}
+      className={`flex flex-col min-h-screen bg-gray-50 ${cartOpen ? "overflow-hidden h-screen" : ""
+        }`}
     >
       <RestaurantHeader />
 

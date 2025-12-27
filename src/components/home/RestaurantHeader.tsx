@@ -54,7 +54,7 @@ export function RestaurantHeader() {
           .from("restaurants")
           .select("*")
           .limit(1)
-          .single();
+          .maybeSingle();
 
         if (error) throw error;
         setRestaurant(data);
@@ -375,9 +375,8 @@ export function RestaurantHeader() {
                       className="flex items-center gap-1"
                     >
                       <Clock className="h-3.5 w-3.5" />
-                      <span>{`${getCurrentDeliveryTime().min}-${
-                        getCurrentDeliveryTime().max
-                      } minutos`}</span>
+                      <span>{`${getCurrentDeliveryTime().min}-${getCurrentDeliveryTime().max
+                        } minutos`}</span>
                     </Badge>
                     <Badge
                       variant="outline"
@@ -387,8 +386,8 @@ export function RestaurantHeader() {
                         <Bike className="h-4 w-4 text-delivery-500" />
                         {restaurant?.delivery_fee && restaurant.delivery_fee > 0
                           ? `R$ ${restaurant.delivery_fee
-                              .toFixed(2)
-                              .replace(".", ",")}`
+                            .toFixed(2)
+                            .replace(".", ",")}`
                           : "Grátis"}
                       </span>
                     </Badge>
