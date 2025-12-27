@@ -569,3 +569,10 @@ COMMENT ON TABLE public.delivery_times IS 'Tempos médios de entrega dos restaur
 COMMENT ON COLUMN public.delivery_times.min_time IS 'Tempo mínimo de entrega em minutos';
 COMMENT ON COLUMN public.delivery_times.max_time IS 'Tempo máximo de entrega em minutos';
 COMMENT ON COLUMN public.delivery_times.day_of_week IS 'Dia da semana (opcional)';
+
+-- =====================================================
+-- 12. PIX KEY UPDATE (2025-12-27)
+-- =====================================================
+
+ALTER TABLE payment_methods 
+ADD COLUMN IF NOT EXISTS pix_key TEXT;
