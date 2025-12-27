@@ -257,6 +257,12 @@ export function DeliverySettingsForm() {
         });
 
         refetch();
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Erro",
+          description: "Por favor, configure as Informações Básicas primeiro para criar o registro do restaurante.",
+        });
       }
     } catch (error: unknown) {
       toast({
@@ -666,8 +672,8 @@ export function DeliverySettingsForm() {
                     {isSubmitting
                       ? "Salvando..."
                       : editingDeliveryTime
-                      ? "Atualizar"
-                      : "Adicionar"}
+                        ? "Atualizar"
+                        : "Adicionar"}
                   </Button>
                 </div>
               </form>
@@ -786,8 +792,8 @@ export function DeliverySettingsForm() {
                     {isSubmitting
                       ? "Salvando..."
                       : editingRegion
-                      ? "Atualizar"
-                      : "Adicionar"}
+                        ? "Atualizar"
+                        : "Adicionar"}
                   </Button>
                 </div>
               </form>

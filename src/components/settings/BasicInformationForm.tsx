@@ -13,7 +13,7 @@ import { Save } from 'lucide-react';
 export function BasicInformationForm() {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -29,7 +29,7 @@ export function BasicInformationForm() {
         .select('*')
         .limit(1)
         .maybeSingle();
-      
+
       if (error) {
         toast({
           variant: "destructive",
@@ -38,7 +38,7 @@ export function BasicInformationForm() {
         });
         return null;
       }
-      
+
       return data;
     }
   });
@@ -65,19 +65,33 @@ export function BasicInformationForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
+
     try {
       if (restaurant) {
         const { error } = await supabase
           .from('restaurants')
           .update(formData)
           .eq('id', restaurant.id);
-          
+
         if (error) throw error;
-        
+
         toast({
           title: "Informações atualizadas",
           description: "As informações básicas foram atualizadas com sucesso."
+        });
+
+        refetch();
+      } else {
+        // If no restaurant exists, create one
+        const { error } = await supabase
+          .from('restaurants')
+          .insert([formData]);
+
+        if (error) throw error;
+
+        toast({
+          title: "Informações salvas",
+          description: "As informações do restaurante foram criadas com sucesso."
         });
 
         refetch();
@@ -113,7 +127,7 @@ export function BasicInformationForm() {
               required
             />
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="description">Descrição</Label>
             <Textarea
@@ -124,7 +138,7 @@ export function BasicInformationForm() {
               rows={3}
             />
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="address">Endereço</Label>
@@ -135,7 +149,7 @@ export function BasicInformationForm() {
                 onChange={handleChange}
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="phone">Telefone</Label>
               <Input
