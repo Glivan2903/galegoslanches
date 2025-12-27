@@ -551,6 +551,19 @@ export function PaymentMethodsManager() {
               </select>
             </div>
 
+            {formData.icon === "qr-code" && (
+              <div className="space-y-2">
+                <Label htmlFor="edit-pix-key">Chave PIX</Label>
+                <Input
+                  id="edit-pix-key"
+                  name="pix_key"
+                  value={formData.pix_key}
+                  onChange={handleChange}
+                  placeholder="CPF, CNPJ, Email ou Chave Aleatória"
+                />
+              </div>
+            )}
+
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="edit-enabled"
