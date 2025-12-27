@@ -56,6 +56,7 @@ type PaymentMethod = {
   enabled: boolean;
   restaurant_id: string | null;
   display_order: number | null;
+  pix_key: string | null;
 };
 
 export function PaymentMethodsManager() {
@@ -72,6 +73,7 @@ export function PaymentMethodsManager() {
     name: "",
     description: "",
     icon: "credit-card",
+    pix_key: "",
     enabled: true,
   });
 
@@ -101,6 +103,7 @@ export function PaymentMethodsManager() {
       name: "",
       description: "",
       icon: "credit-card",
+      pix_key: "",
       enabled: true,
     });
   };
@@ -143,6 +146,7 @@ export function PaymentMethodsManager() {
       name: method.name,
       description: method.description || "",
       icon: method.icon || "credit-card",
+      pix_key: method.pix_key || "",
       enabled: method.enabled,
     });
     setIsEditDialogOpen(true);
@@ -189,6 +193,7 @@ export function PaymentMethodsManager() {
         name: formData.name,
         description: formData.description || null,
         icon: formData.icon,
+        pix_key: formData.icon === "qr-code" && formData.pix_key ? formData.pix_key : null,
         enabled: formData.enabled,
       });
 
@@ -228,6 +233,7 @@ export function PaymentMethodsManager() {
           name: formData.name,
           description: formData.description || null,
           icon: formData.icon,
+          pix_key: formData.icon === "qr-code" && formData.pix_key ? formData.pix_key : null,
           enabled: formData.enabled,
         })
         .eq("id", selectedMethod.id);
@@ -450,6 +456,19 @@ export function PaymentMethodsManager() {
                 <option value="wallet">Carteira Digital</option>
               </select>
             </div>
+
+            {formData.icon === "qr-code" && (
+              <div className="space-y-2">
+                <Label htmlFor="pix_key">Chave PIX</Label>
+                <Input
+                  id="pix_key"
+                  name="pix_key"
+                  value={formData.pix_key}
+                  onChange={handleChange}
+                  placeholder="CPF, CNPJ, Email ou Chave Aleatória"
+                />
+              </div>
+            )}
 
             <div className="flex items-center space-x-2">
               <Checkbox

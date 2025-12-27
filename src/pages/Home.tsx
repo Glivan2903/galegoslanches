@@ -24,6 +24,13 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 // Interface para horários de funcionamento
 interface BusinessHour {
@@ -69,6 +76,11 @@ export default function Home() {
   const [isLoadingBusinessHours, setIsLoadingBusinessHours] = useState(false);
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [cartOpen, setCartOpen] = useState(false);
+
+  // Store Closed Logic State
+  const [isStoreOpen, setIsStoreOpen] = useState(true);
+  const [nextOpenTime, setNextOpenTime] = useState("");
+  const [isClosedModalOpen, setIsClosedModalOpen] = useState(false);
 
   // Função para formatar horário
   const formatTime = (timeString: string) => {
@@ -151,6 +163,82 @@ export default function Home() {
 
     fetchBusinessHours();
   }, []);
+
+  // Function to check if store is open
+  const checkStoreStatus = () => {
+    if (!businessHours || businessHours.length === 0) return;
+
+    const daysInPortuguese = [
+      "Domingo",
+      "Segunda-feira",
+      "Terça-feira",
+      "Quarta-feira",
+      "Quinta-feira",
+      "Sexta-feira",
+      "Sábado",
+    ];
+
+    const now = new Date();
+    const currentDay = daysInPortuguese[now.getDay()];
+    const currentHours = now.getHours().toString().padStart(2, '0');
+    const currentMinutes = now.getMinutes().toString().padStart(2, '0');
+    const currentTime = `${currentHours}:${currentMinutes}`;
+
+    const todayHour = businessHours.find(h => h.day_of_week === currentDay);
+
+    let isOpen = false;
+    let nextOpen = "";
+
+    if (todayHour) {
+      if (!todayHour.is_closed) {
+        if (currentTime >= todayHour.open_time && currentTime <= todayHour.close_time) {
+          isOpen = true;
+        } else {
+          if (currentTime < todayHour.open_time) {
+            nextOpen = `Hoje às ${formatTime(todayHour.open_time)}`;
+          } else {
+            nextOpen = "Amanhã"
+          }
+        }
+      }
+    }
+
+    setIsStoreOpen(isOpen);
+    if (!isOpen) {
+      if (!nextOpen) {
+        let nextDayIndex = (now.getDay() + 1) % 7;
+        let found = false;
+        for (let i = 0; i < 7; i++) {
+          const dayName = daysInPortuguese[nextDayIndex];
+          const hour = businessHours.find(h => h.day_of_week === dayName);
+          if (hour && !hour.is_closed) {
+            nextOpen = `${dayName} às ${formatTime(hour.open_time)}`;
+            found = true;
+            break;
+          }
+          nextDayIndex = (nextDayIndex + 1) % 7;
+        }
+        if (!found) nextOpen = "Em breve";
+      }
+      setNextOpenTime(nextOpen);
+    }
+  };
+
+  // Check status when business hours load using useEffect and interval
+  useEffect(() => {
+    if (businessHours.length > 0) {
+      checkStoreStatus();
+      const interval = setInterval(checkStoreStatus, 60000);
+      return () => clearInterval(interval);
+    }
+  }, [businessHours]);
+
+  // Show modal initially if closed
+  useEffect(() => {
+    if (businessHours.length > 0 && !isStoreOpen) {
+      setIsClosedModalOpen(true);
+    }
+  }, [isStoreOpen, businessHours]);
 
   // Efeito para carregar informações do restaurante
   useEffect(() => {
@@ -264,6 +352,12 @@ export default function Home() {
     selectedAddons?: ProductAddon[],
     notes?: string
   ) => {
+    // Store closed check
+    if (!isStoreOpen) {
+      setIsClosedModalOpen(true);
+      return;
+    }
+
     const isQuickAdd =
       product.addons && product.addons.length > 0 && !selectedAddons;
 
@@ -473,6 +567,23 @@ export default function Home() {
             </div>
           </div>
         </div>
+
+        {/* Modal Store Closed */}
+        <Dialog open={isClosedModalOpen} onOpenChange={setIsClosedModalOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Estamos fechados no momento</DialogTitle>
+              <DialogDescription>
+                Infelizmente não estamos aceitando pedidos agora.
+                <br />
+                Abriremos novamente: <strong>{nextOpenTime}</strong>.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex justify-end">
+              <Button onClick={() => setIsClosedModalOpen(false)}>Entendi</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <FloatingCart
@@ -482,6 +593,7 @@ export default function Home() {
         totalItems={totalItems}
         totalPrice={totalPrice}
         onOpenChange={handleCartToggle}
+        isStoreOpen={isStoreOpen}
       />
     </div>
   );

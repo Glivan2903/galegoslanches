@@ -48,6 +48,13 @@ import { Icon, IconName } from "@/components/ui/icon";
 import { useQueryClient } from "@tanstack/react-query";
 import { OrderConfirmation } from "../checkout/OrderConfirmation";
 import { useNavigate } from "react-router-dom";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface CartItem {
   product: Product;
@@ -63,6 +70,7 @@ interface FloatingCartProps {
   totalItems: number;
   totalPrice: number;
   onOpenChange?: (isOpen: boolean) => void;
+  isStoreOpen?: boolean;
 }
 
 type OrderType = "delivery" | "takeaway" | "instore";
@@ -117,6 +125,7 @@ interface PaymentMethod {
   name: string;
   icon: string;
   description?: string;
+  pix_key?: string | null;
 }
 
 // Adicionar novo tipo para as etapas do carrinho
@@ -141,6 +150,12 @@ interface BusinessHour {
   open_time: string;
   close_time: string;
   is_closed: boolean;
+}
+
+interface DeliveryRegion {
+  id: string;
+  name: string;
+  fee: number;
 }
 
 // Formatar número de telefone para exibição
@@ -264,6 +279,7 @@ export function FloatingCart({
   totalItems,
   totalPrice,
   onOpenChange,
+  isStoreOpen = true,
 }: FloatingCartProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
@@ -286,6 +302,8 @@ export function FloatingCart({
   const [isLoadingCep, setIsLoadingCep] = useState(false);
   const navigate = useNavigate();
   const [orderCreatedId, setOrderCreatedId] = useState<string | null>(null);
+  const [deliveryRegions, setDeliveryRegions] = useState<DeliveryRegion[]>([]);
+  const [selectedRegion, setSelectedRegion] = useState<DeliveryRegion | null>(null);
 
   // Efeito para controlar o scroll da página quando o carrinho está aberto
   useEffect(() => {
@@ -304,7 +322,8 @@ export function FloatingCart({
   }, [isOpen]);
 
   // Valor padrão para taxa de entrega, será substituído pelos dados do restaurante quando carregados
-  const deliveryFee = restaurant?.delivery_fee ?? 5.0;
+  // Se uma região estiver selecionada, usa a taxa da região, senão usa a taxa do restaurante ou padrão
+  const deliveryFee = selectedRegion ? selectedRegion.fee : (restaurant?.delivery_fee ?? 5.0);
   // A taxa de entrega só deve ser aplicada quando tivermos um tipo de pedido definido como delivery
   // No carrinho inicial, não devemos mostrar nem aplicar a taxa
   const finalTotal =
@@ -429,6 +448,28 @@ export function FloatingCart({
     fetchBusinessHours();
   }, []);
 
+  // Carregar regiões de entrega
+  useEffect(() => {
+    const fetchDeliveryRegions = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("delivery_regions")
+          .select("*")
+          .order("name");
+
+        if (error) throw error;
+
+        if (data) {
+          setDeliveryRegions(data);
+        }
+      } catch (error) {
+        console.error("Erro ao carregar regiões de entrega:", error);
+      }
+    };
+
+    fetchDeliveryRegions();
+  }, []);
+
   // Atualizar o tipo de pedido quando mudar
   useEffect(() => {
     form.setValue("orderType", orderType);
@@ -480,15 +521,21 @@ export function FloatingCart({
       }, 0);
 
       // Calculate delivery fee based on orderType - only apply for delivery orders
-      const deliveryFee =
-        data.orderType === "delivery" ? restaurant?.delivery_fee ?? 5.0 : 0;
+      let deliveryFee = 0;
+      if (data.orderType === "delivery") {
+        if (selectedRegion) {
+          deliveryFee = selectedRegion.fee;
+        } else {
+          deliveryFee = restaurant?.delivery_fee ?? 5.0;
+        }
+      }
 
       // Calculate total
       const total = subtotal + deliveryFee;
 
       // Format delivery address if applicable
       let deliveryAddress = null;
-      const deliveryRegionId = null;
+      let deliveryRegionId = selectedRegion?.id || null;
 
       if (data.orderType === "delivery") {
         // Format address
@@ -825,10 +872,10 @@ export function FloatingCart({
       let message = `*Pedido #${orderInfo.orderNumber}*\n\n`;
       message += `*Restaurante:* ${orderInfo.restaurantName}\n`;
       message += `*Tipo de pedido:* ${orderInfo.orderType === "delivery"
-          ? "Entrega"
-          : orderInfo.orderType === "takeaway"
-            ? "Retirada"
-            : "No local"
+        ? "Entrega"
+        : orderInfo.orderType === "takeaway"
+          ? "Retirada"
+          : "No local"
         }\n`;
 
       if (orderInfo.orderType === "instore") {
@@ -1062,7 +1109,18 @@ export function FloatingCart({
 
       // Preencher os campos do formulário com os dados retornados
       form.setValue("streetName", data.logradouro || "");
-      form.setValue("neighborhood", data.bairro || "");
+
+      // Auto-select region if it matches
+      let neighborhood = data.bairro || "";
+      if (neighborhood) {
+        const region = deliveryRegions.find(r => r.name.toLowerCase() === neighborhood.toLowerCase());
+        if (region) {
+          neighborhood = region.name;
+          setSelectedRegion(region);
+        }
+      }
+      form.setValue("neighborhood", neighborhood);
+
       form.setValue("city", data.localidade || "");
       form.setValue("state", data.uf || "");
 
@@ -1331,9 +1389,9 @@ export function FloatingCart({
                   <Button
                     className="w-full bg-delivery-500 hover:bg-delivery-600"
                     onClick={handleProceedToCheckout}
-                    disabled={cartItems.length === 0}
+                    disabled={cartItems.length === 0 || !isStoreOpen}
                   >
-                    Finalizar pedido
+                    {!isStoreOpen ? "Loja Fechada" : "Finalizar pedido"}
                   </Button>
                 </div>
               </>
@@ -1578,13 +1636,29 @@ export function FloatingCart({
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Bairro</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="Nome do bairro"
-                                {...field}
-                                disabled={isSubmitting || isLoadingCep}
-                              />
-                            </FormControl>
+                            <Select
+                              onValueChange={(value) => {
+                                field.onChange(value);
+                                // Encontrar a região selecionada e atualizar o estado para recalcular a taxa
+                                const region = deliveryRegions.find(r => r.name === value);
+                                setSelectedRegion(region || null);
+                              }}
+                              defaultValue={field.value}
+                              disabled={isSubmitting}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Selecione o bairro" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {deliveryRegions.map((region) => (
+                                  <SelectItem key={region.id} value={region.name}>
+                                    {region.name} ({formatCurrency(region.fee)})
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -1786,17 +1860,44 @@ export function FloatingCart({
                 <p className="text-xs sm:text-sm text-muted-foreground">Código do pedido</p>
               </div>
 
-              {/* <div className="flex items-center justify-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-                <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-delivery-500" />
-                <p className="text-xs sm:text-sm text-center">
-                  {orderType === "delivery"
-                    ? "Horário estimado de chegada"
-                    : orderType === "takeaway"
-                    ? "Retirada disponível para"
-                    : "Pedido disponível em"}{" "}
-                  <span className="font-medium ml-1">{orderTime}</span>
-                </p>
-              </div> */}
+
+
+              {orderData?.paymentMethodId && (() => {
+                const method = paymentMethods.find(m => m.id === orderData.paymentMethodId);
+                if (method?.pix_key) {
+                  return (
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 w-full mb-4 sm:mb-6 text-left">
+                      <div className="text-center mb-3">
+                        <h4 className="font-semibold text-gray-900">Pagamento via PIX</h4>
+                        <p className="text-sm text-gray-500">
+                          Use a chave abaixo para realizar o pagamento:
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2 mb-2">
+                        <code className="flex-1 bg-white border border-gray-200 rounded px-3 py-2 text-sm font-mono break-all">
+                          {method.pix_key}
+                        </code>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            navigator.clipboard.writeText(method.pix_key || "");
+                            toast.success("Chave PIX copiada!");
+                          }}
+                        >
+                          Copiar
+                        </Button>
+                      </div>
+
+                      <div className="text-xs text-center text-gray-500">
+                        Após realizar o pagamento, envie o comprovante pelo WhatsApp.
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
 
               <div className="space-y-2 sm:space-y-3 w-full mt-3 sm:mt-4">
                 <Button
@@ -1825,9 +1926,10 @@ export function FloatingCart({
                 </Button>
               </div>
             </div>
-          </ScrollArea>
-        )}
-      </div>
+          </ScrollArea >
+        )
+        }
+      </div >
     </>
   );
 }
