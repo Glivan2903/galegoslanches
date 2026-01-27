@@ -41,6 +41,7 @@ interface Product {
   category_id?: string;
   available: boolean;
   featured: boolean;
+  free_accompaniments_limit?: number;
 }
 
 interface ProductFormProps {
@@ -65,6 +66,7 @@ export function ProductForm({
     category_id: "",
     available: true,
     featured: false,
+    free_accompaniments_limit: 0,
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -140,7 +142,9 @@ export function ProductForm({
         image_url: product.image_url || "",
         category_id: product.category_id || "",
         available: product.available !== undefined ? product.available : true,
+        available: product.available !== undefined ? product.available : true,
         featured: product.featured || false,
+        free_accompaniments_limit: product.free_accompaniments_limit || 0,
       });
     }
   }, [product]);
@@ -180,6 +184,7 @@ export function ProductForm({
     const productData = {
       ...formData,
       price: parseFloat(formData.price.toString()),
+      free_accompaniments_limit: parseInt(formData.free_accompaniments_limit.toString()) || 0,
     };
 
     try {
@@ -367,6 +372,22 @@ export function ProductForm({
                 onChange={handleChange}
                 required
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="free_accompaniments_limit">Limite de Adicionais Grátis</Label>
+              <Input
+                id="free_accompaniments_limit"
+                name="free_accompaniments_limit"
+                type="number"
+                min="0"
+                value={formData.free_accompaniments_limit}
+                onChange={handleChange}
+                placeholder="Ex: 0 para nenhum"
+              />
+              <p className="text-xs text-muted-foreground">
+                Quantidade de acompanhamentos que o cliente pode escolher sem custo adicional.
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -591,8 +612,8 @@ export function ProductForm({
               {isSubmitting
                 ? "Salvando..."
                 : isEditing
-                ? "Salvar Alterações"
-                : "Criar Produto"}
+                  ? "Salvar Alterações"
+                  : "Criar Produto"}
             </Button>
           </DialogFooter>
         </form>

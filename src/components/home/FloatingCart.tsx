@@ -56,6 +56,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+import { calculateItemPrice, calculateItemPriceDetails } from "@/utils/priceCalculator";
+
 interface CartItem {
   product: Product;
   quantity: number;
@@ -504,20 +506,7 @@ export function FloatingCart({
 
       // Calculate subtotal based on order items
       const subtotal = cartItems.reduce((sum, item) => {
-        const basePrice = item.product.price;
-
-        // Calcular o preço dos adicionais
-        const addonsTotalPrice = (item.selectedAddons || []).reduce(
-          (sum, addon) => sum + addon.price * (addon.quantity || 1),
-          0
-        );
-
-        // Preço total por unidade (produto base + adicionais)
-        const unitPriceWithAddons = basePrice + addonsTotalPrice;
-
-        // Preço total do item (incluindo quantidade)
-        const totalItemPrice = unitPriceWithAddons * item.quantity;
-        return sum + totalItemPrice;
+        return sum + calculateItemPrice(item.product, item.quantity, item.selectedAddons);
       }, 0);
 
       // Calculate delivery fee based on orderType - only apply for delivery orders
@@ -593,20 +582,11 @@ export function FloatingCart({
 
       // Insert order items
       for (const item of cartItems) {
-        // Calcular o preço unitário e total corretamente
-        const basePrice = item.product.price;
+        // Calculate detailed price breakdown
+        const priceDetails = calculateItemPriceDetails(item.product, item.quantity, item.selectedAddons);
 
-        // Calcular o preço dos adicionais
-        const addonsTotalPrice = (item.selectedAddons || []).reduce(
-          (sum, addon) => sum + addon.price * (addon.quantity || 1),
-          0
-        );
-
-        // Preço total por unidade (produto base + adicionais)
-        const unitPriceWithAddons = basePrice + addonsTotalPrice;
-
-        // Preço total do item (incluindo quantidade)
-        const totalItemPrice = unitPriceWithAddons * item.quantity;
+        // Calculate unit price based on the total for the line item divided by quantity
+        const unitPriceWithAddons = priceDetails.totalItemPrice / item.quantity;
 
         // Insert order item
         const { data: orderItem, error: itemError } = await supabase
@@ -616,7 +596,7 @@ export function FloatingCart({
             product_id: item.product.id,
             quantity: item.quantity,
             unit_price: Number(unitPriceWithAddons.toFixed(2)),
-            total_price: Number(totalItemPrice.toFixed(2)),
+            total_price: Number(priceDetails.totalItemPrice.toFixed(2)),
             notes: item.notes || null,
           })
           .select()
@@ -624,16 +604,15 @@ export function FloatingCart({
 
         if (itemError) throw itemError;
 
-        // Insert order item addons if any
-        if (item.selectedAddons && item.selectedAddons.length > 0) {
-          const addonsToInsert = item.selectedAddons.map((addon) => ({
+        // Insert order item addons using the detailed breakdown
+        if (priceDetails.addonsDetails.length > 0) {
+          const addonsToInsert = priceDetails.addonsDetails.map((detail) => ({
             order_item_id: orderItem.id,
-            addon_id: addon.id,
-            quantity: addon.quantity || 1,
-            unit_price: Number(addon.price.toFixed(2)),
-            total_price: Number(
-              (addon.price * (addon.quantity || 1)).toFixed(2)
-            ),
+            addon_id: detail.addon.id,
+            quantity: item.selectedAddons?.find(a => a.id === detail.addon.id)?.quantity || 1,
+            // Effective Unit Price = Final Price / Quantity
+            unit_price: Number((detail.finalPrice / (item.selectedAddons?.find(a => a.id === detail.addon.id)?.quantity || 1)).toFixed(2)),
+            total_price: Number(detail.finalPrice.toFixed(2)),
           }));
 
           const { error: addonsError } = await supabase

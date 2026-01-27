@@ -312,6 +312,7 @@ export default function Home() {
               available: product.available,
               featured: product.featured,
               createdAt: new Date(product.created_at),
+              free_accompaniments_limit: (product as any).free_accompaniments_limit,
               addons: productAddonsForThisProduct,
             };
           });

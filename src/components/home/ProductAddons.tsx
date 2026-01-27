@@ -5,12 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Check, Plus, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-interface ProductAddonsProps {
+export interface ProductAddonsProps {
   addons: ProductAddon[];
   onSelect: (addon: ProductAddon, selected: boolean, quantity?: number) => void;
+  maxSelectedReached?: boolean;
 }
 
-export function ProductAddons({ addons, onSelect }: ProductAddonsProps) {
+export function ProductAddons({ addons, onSelect, maxSelectedReached = false }: ProductAddonsProps) {
   if (!addons || addons.length === 0) {
     return null;
   }
@@ -20,8 +21,8 @@ export function ProductAddons({ addons, onSelect }: ProductAddonsProps) {
       <h4 className="font-medium text-sm">Adicionais</h4>
       <div className="space-y-2">
         {addons.map((addon) => (
-          <div 
-            key={addon.id} 
+          <div
+            key={addon.id}
             className={cn(
               "flex items-center justify-between p-3 rounded-md border",
               addon.selected ? "border-delivery-500 bg-delivery-50" : "border-gray-200",
@@ -71,6 +72,7 @@ export function ProductAddons({ addons, onSelect }: ProductAddonsProps) {
                   type="button"
                   variant="outline"
                   size="icon"
+                  // Disable if: not available OR reached max options for this addon
                   disabled={!addon.available || (addon.quantity || 0) >= (addon.maxOptions || 1)}
                   onClick={() => {
                     const currentQuantity = addon.quantity || 0;
@@ -87,6 +89,7 @@ export function ProductAddons({ addons, onSelect }: ProductAddonsProps) {
                 type="button"
                 variant={addon.selected ? "default" : "outline"}
                 size="sm"
+                // Disable if: not available
                 disabled={!addon.available}
                 onClick={() => onSelect(addon, !addon.selected)}
                 className={cn(

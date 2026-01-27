@@ -9,6 +9,7 @@ import { Product, ProductAddon } from '@/types';
 import { Star, Plus, Minus, ShoppingCart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useProductAddons } from '@/hooks/useProductAddons';
+import { calculateItemPrice } from '@/utils/priceCalculator';
 
 interface ProductDetailDialogProps {
   product: Product | null;
@@ -17,18 +18,18 @@ interface ProductDetailDialogProps {
   onAddToCart: (product: Product, quantity: number, selectedAddons: ProductAddon[], notes?: string) => void;
 }
 
-export function ProductDetailDialog({ 
-  product, 
-  open, 
+export function ProductDetailDialog({
+  product,
+  open,
   onOpenChange,
-  onAddToCart 
+  onAddToCart
 }: ProductDetailDialogProps) {
   const [quantity, setQuantity] = useState(1);
   const [notes, setNotes] = useState('');
   const [selectedAddons, setSelectedAddons] = useState<ProductAddon[]>([]);
   // We'll use our custom hook here to fetch addons if they weren't provided
   const { addons: fetchedAddons, loading: addonsLoading } = useProductAddons(open && !product?.addons?.length ? product?.id : undefined);
-  
+
   const productAddons = product?.addons || fetchedAddons;
 
   // Reset state when product changes or dialog closes
@@ -52,7 +53,7 @@ export function ProductDetailDialog({
   const handleAddonSelection = (addon: ProductAddon, selected: boolean, quantity: number = 1) => {
     if (selected) {
       const existingAddonIndex = selectedAddons.findIndex(a => a.id === addon.id);
-      
+
       if (existingAddonIndex >= 0) {
         // Update existing addon
         const updatedAddons = [...selectedAddons];
@@ -72,10 +73,11 @@ export function ProductDetailDialog({
     }
   };
 
-  const totalPrice = (
-    product.price * quantity + 
-    selectedAddons.reduce((sum, addon) => sum + addon.price * (addon.quantity || 1), 0)
-  );
+  const totalPrice = product ? calculateItemPrice(product, quantity, selectedAddons) : 0;
+
+  const freeLimit = product?.free_accompaniments_limit || 0;
+  const selectedCount = selectedAddons.reduce((acc, curr) => acc + (curr.quantity || 1), 0);
+  const maxSelectedReached = freeLimit > 0 && selectedCount >= freeLimit;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -95,7 +97,7 @@ export function ProductDetailDialog({
           </div>
           <DialogTitle className="text-xl">{product.name}</DialogTitle>
           <p className="text-muted-foreground">{product.description}</p>
-          
+
           <div className="text-lg font-bold text-delivery-700 mt-2">
             {new Intl.NumberFormat('pt-BR', {
               style: 'currency',
@@ -105,18 +107,35 @@ export function ProductDetailDialog({
         </DialogHeader>
 
         <div className="space-y-4">
+          {freeLimit > 0 && (
+            <div className={cn(
+              "p-3 rounded-md text-sm mb-4 flex items-center justify-between border",
+              maxSelectedReached
+                ? "bg-amber-50 text-amber-800 border-amber-200"
+                : "bg-blue-50 text-blue-800 border-blue-100"
+            )}>
+              <span className="font-medium">
+                {maxSelectedReached ? "Adicionais extras serão cobrados" : "Adicionais Grátis:"}
+              </span>
+              <span className="font-bold">
+                {selectedCount} / {freeLimit}
+              </span>
+            </div>
+          )}
+
           {addonsLoading ? (
             <div className="py-4 text-center text-muted-foreground">
               Carregando adicionais...
             </div>
           ) : productAddons && productAddons.length > 0 ? (
-            <ProductAddons 
+            <ProductAddons
               addons={productAddons.map(addon => ({
                 ...addon,
                 selected: selectedAddons.some(a => a.id === addon.id),
                 quantity: selectedAddons.find(a => a.id === addon.id)?.quantity || 0
-              }))} 
-              onSelect={handleAddonSelection} 
+              }))}
+              onSelect={handleAddonSelection}
+              maxSelectedReached={maxSelectedReached}
             />
           ) : null}
 
@@ -166,13 +185,13 @@ export function ProductDetailDialog({
               }).format(totalPrice)}
             </span>
           </div>
-          
+
           <div className="flex w-full gap-2">
             <DialogClose asChild>
               <Button variant="outline" className="flex-1">Cancelar</Button>
             </DialogClose>
-            <Button 
-              onClick={handleAddToCart} 
+            <Button
+              onClick={handleAddToCart}
               className={cn(
                 "flex-1 gap-2 bg-delivery-500 hover:bg-delivery-600",
                 !product.available && "opacity-50 cursor-not-allowed"

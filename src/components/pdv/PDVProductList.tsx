@@ -47,6 +47,7 @@ export function PDVProductList({ onAddToCart }: PDVProductListProps) {
         available: product.available,
         featured: product.featured || false,
         createdAt: new Date(product.created_at),
+        free_accompaniments_limit: (product as any).free_accompaniments_limit,
         addons: (addonRelations || [])
           .filter(relation => relation.product_id === product.id)
           .map(relation => {

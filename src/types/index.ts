@@ -21,6 +21,7 @@ export interface Product {
   available: boolean;
   featured?: boolean;
   createdAt: Date;
+  free_accompaniments_limit?: number;
   addons?: ProductAddon[]; // Added addon support
 }
 

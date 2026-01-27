@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { calculateItemPrice } from "@/utils/priceCalculator";
 import { Product, ProductAddon } from "@/types";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -84,7 +85,7 @@ export function CartSummary({
                         {new Intl.NumberFormat("pt-BR", {
                           style: "currency",
                           currency: "BRL",
-                        }).format(item.product.price * item.quantity)}
+                        }).format(calculateItemPrice(item.product, item.quantity, item.selectedAddons))}
                       </p>
                     </div>
 
