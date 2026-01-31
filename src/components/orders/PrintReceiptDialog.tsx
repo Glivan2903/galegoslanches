@@ -46,16 +46,27 @@ export function PrintReceiptDialog({
               font-family: monospace;
               width: 80mm;
               margin: 0 auto;
-              padding: 8mm;
-              color: black;
+              padding: 0;
+              color: #000000 !important;
               background-color: white;
-              font-size: 12px;
+              font-size: 14px;
               line-height: 1.4;
+              font-weight: 700;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+              height: auto;
+              overflow: visible;
             }
             @page {
               size: 80mm auto;
-              margin: 5mm;
-              padding: 0mm;
+              margin: 0mm;
+            }
+            * {
+              color: #000000 !important;
+              font-weight: 700 !important;
+            }
+            .content-wrapper {
+              page-break-inside: avoid;
             }
             .print-hidden {
               display: none !important;
@@ -64,12 +75,12 @@ export function PrintReceiptDialog({
               margin-bottom: 2px;
             }
             .border-t {
-              border-top: 1px dashed #000;
+              border-top: 2px dashed #000;
               margin: 10px 0;
               padding-top: 5px;
             }
             .font-bold {
-              font-weight: bold;
+              font-weight: 900 !important;
             }
             .mb-1 { margin-bottom: 4px; }
             .mb-2 { margin-bottom: 8px; }
@@ -84,7 +95,9 @@ export function PrintReceiptDialog({
           </style>
         </head>
         <body>
-          ${printContents}
+          <div class="content-wrapper">
+            ${printContents}
+          </div>
         </body>
       </html>
     `);
@@ -100,20 +113,24 @@ export function PrintReceiptDialog({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-[350px]">
-        <DialogHeader>
+      <DialogContent className="max-w-[400px] h-[85vh] flex flex-col p-0 gap-0">
+        <DialogHeader className="p-4 pb-2">
           <DialogTitle>Imprimir Comanda</DialogTitle>
         </DialogHeader>
-        <div className="bg-white rounded-lg">
-          <div ref={printRef}>
-            <OrderReceipt orderId={orderId} />
+
+        <div className="flex-1 overflow-y-auto p-4 pt-0">
+          <div className="bg-white rounded-lg">
+            <div ref={printRef}>
+              <OrderReceipt orderId={orderId} />
+            </div>
           </div>
-          <div className="flex justify-end mt-4 print-hidden">
-            <Button onClick={handlePrint} className="flex items-center gap-2">
-              <Printer className="h-4 w-4" />
-              Imprimir
-            </Button>
-          </div>
+        </div>
+
+        <div className="p-4 border-t mt-auto bg-background print-hidden">
+          <Button onClick={handlePrint} className="w-full flex items-center justify-center gap-2">
+            <Printer className="h-4 w-4" />
+            Imprimir
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

@@ -153,8 +153,8 @@ export function OrderReceipt({ orderId }: OrderReceiptProps) {
   React.useEffect(() => {
     if (order?.number) {
       setTimeout(() => {
-        const canvas = document.createElement("canvas");
-        JsBarcode(canvas, order.number.padStart(7, "0"), {
+        const img = document.createElement("img");
+        JsBarcode(img, order.number.padStart(7, "0"), {
           format: "CODE128",
           width: 2,
           height: 50,
@@ -167,7 +167,7 @@ export function OrderReceipt({ orderId }: OrderReceiptProps) {
         );
         if (barcodeContainer) {
           barcodeContainer.innerHTML = "";
-          barcodeContainer.appendChild(canvas);
+          barcodeContainer.appendChild(img);
         }
       }, 100);
     }
@@ -245,6 +245,12 @@ export function OrderReceipt({ orderId }: OrderReceiptProps) {
         )}
         {order.table_number && (
           <div className="mb-1">Mesa: {order.table_number}</div>
+        )}
+        {order.notes && (
+          <div className="mb-1 mt-2 border-t pt-2">
+            <span className="font-bold">OBSERVAÇÕES:</span>
+            <div className="text-sm mt-1">{order.notes}</div>
+          </div>
         )}
       </div>
 
